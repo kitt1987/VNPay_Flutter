@@ -26,14 +26,12 @@ extension VNPayHashTypeExt on VNPayHashType {
   }
 }
 
-
 //[VNPAYFlutter] instance class VNPAY Flutter
 class VNPAYFlutter {
   static final VNPAYFlutter _instance = VNPAYFlutter();
 
-    //[instance] Single Ton Init
+  //[instance] Single Ton Init
   static VNPAYFlutter get instance => _instance;
-
 
   Map<String, dynamic> _sortParams(Map<String, dynamic> params) {
     final sortedParams = <String, dynamic>{};
@@ -44,14 +42,13 @@ class VNPAYFlutter {
     return sortedParams;
   }
 
-
   //[generatePaymentUrl] Generate payment Url with input parameters
   String generatePaymentUrl({
     String url = 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html',
     required String version,
     String command = 'pay',
     required String tmnCode,
-    String locale = 'vn',
+    String locale = 'en',
     String currencyCode = 'VND',
     required String txnRef,
     String orderInfo = 'Pay Order',
@@ -89,28 +86,27 @@ class VNPAYFlutter {
     var sortedParam = _sortParams(params);
     final hashDataBuffer = StringBuffer();
     sortedParam.forEach((key, value) {
-      hashDataBuffer.write(key);
+      hashDataBuffer.write(Uri.encodeComponent(key));
       hashDataBuffer.write('=');
-      hashDataBuffer.write(value);
+      hashDataBuffer.write(Uri.encodeComponent(value).replaceAll('%20', '+'));
       hashDataBuffer.write('&');
     });
     String hashData =
         hashDataBuffer.toString().substring(0, hashDataBuffer.length - 1);
-    String query = sortedParam.entries
-        .map((e) => '${e.key}=${e.value}')
-        .join('&'); //Uri(host: url, queryParameters: sortedParam).query;
+    // String query = sortedParam.entries
+    //     .map((e) => '${e.key}=${e.value}')
+    //     .join('&'); //Uri(host: url, queryParameters: sortedParam).query;
     String vnpSecureHash = "";
 
     if (vnPayHashType == VNPayHashType.SHA256) {
-      List<int> bytes = utf8.encode(vnpayHashKey + hashData.toString());
+      List<int> bytes = utf8.encode(vnpayHashKey + hashData);
       vnpSecureHash = sha256.convert(bytes).toString();
     } else if (vnPayHashType == VNPayHashType.HMACSHA512) {
       vnpSecureHash = Hmac(sha512, utf8.encode(vnpayHashKey))
           .convert(utf8.encode(hashData))
           .toString();
     }
-    String paymentUrl =
-        "$url?$query&vnp_SecureHashType=${vnPayHashType.toValueString()}&vnp_SecureHash=$vnpSecureHash";
+    String paymentUrl = "$url?$hashData&vnp_SecureHash=$vnpSecureHash";
     debugPrint("=====>[PAYMENT URL]: $paymentUrl");
     return paymentUrl;
   }
